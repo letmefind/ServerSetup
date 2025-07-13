@@ -62,7 +62,7 @@
                     "domain:reka.ai",
                     "domain:cohere.ai",
                     "domain:voyager.xyz",
-                    "domain:magickml.com"
+                    "domain:magickml.com",
                     "domain:ai.com",
                     "regexp:.*\\.ir$",
                     "ext:iran.dat:ir",
