@@ -94,13 +94,12 @@ EOF
 
 # === 4.2 Overwrite route.json ===
 rm -f /etc/XMPlus/route.json
-cat <<EOF > /etc/XMPlus/route.json
+cat <<'EOF' > /etc/XMPlus/route.json
 {
   "domainStrategy": "IPIfNonMatch",
   "rules": [$(curl -s https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json)]
 }
 EOF
-
 # === 4.3 Overwrite outbound.json ===
 rm -f /etc/XMPlus/outbound.json
 cat <<EOF > /etc/XMPlus/outbound.json
