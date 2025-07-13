@@ -1,0 +1,109 @@
+{
+    "domainStrategy": "IPIfNonMatch",
+     "rules":[
+ 	 {
+      "type": "field",
+      "outboundTag": "socks5-warp",
+      "domain": [
+                    "domain:btstatic.com",
+                    "domain:playstation.com",
+		    "domain:netflix.com",
+		    "domain:sony.com",
+                    "domain:netflix.net",
+                    "domain:nflxext.com",
+                    "domain:nflximg.com",
+                    "domain:nflximg.net",
+                    "domain:nflxsearch.net",
+                    "domain:nflxso.net",
+                    "domain:nflxvideo.net",
+                    "domain:netflixinvestor.com",
+                    "domain:byspotify.com",
+                    "domain:pscdn.co",
+                    "domain:scdn.co",
+                    "domain:spoti.fi",
+                    "domain:spotify-everywhere.com",
+                    "domain:spotify.com",
+                    "domain:spotify.design",
+                    "domain:spotifycdn.com",
+                    "domain:spotifycdn.net",
+                    "domain:spotifycharts.com",
+                    "domain:sspotifycodes.com",
+                    "domain:spotifyforbrands.com",
+                    "domain:spotifyjobs.com",
+                    "domain:openai.com",
+                    "domain:google.com",
+                    "domain:rithmic.com",
+
+                    "domain:openai.com",
+                    "domain:chat.openai.com",
+                    "domain:ai.com",
+                    "domain:grok.x.ai",
+                    "domain:x.ai",
+                    "domain:anthropic.com",
+                    "domain:claude.ai",
+                    "domain:perplexity.ai",
+                    "domain:poe.com",
+                    "domain:mistral.ai",
+                    "domain:inflection.ai",
+                    "domain:you.com",
+                    "domain:phind.com",
+                    "domain:deepl.com",
+                    "domain:character.ai",
+                    "domain:huggingface.co",
+                    "domain:huggingfaceusercontent.com",
+                    "domain:bard.google.com",
+                    "domain:gemini.google.com",
+                    "domain:gemini.ai",
+                    "domain:scale.com",
+                    "domain:runwayml.com",
+                    "domain:stability.ai",
+                    "domain:midjourney.com",
+                    "domain:leonardo.ai",
+                    "domain:reka.ai",
+                    "domain:cohere.ai",
+                    "domain:voyager.xyz",
+                    "domain:magickml.com"
+                    "domain:ai.com",
+                    "regexp:.*\\.ir$",
+                    "ext:iran.dat:ir",
+                    "ext:iran.dat:other",
+                    "geosite:category-ir",
+                    "snapp", "digikala","tapsi", "blogfa", "bank", "sb24.com", "sheypoor.com", "tebyan.net", "beytoote.com", "telewebion.com", "Film2movie.ws", "Setare.com", "Filimo.com", "Torob.com", "Tgju.org", "Sarzamindownload.com", "downloadha.com", "P30download.com", "Sanjesh.org"
+    ]
+    },
+      {
+        "ip": [
+          "geoip:private",
+          "geoip:ir",
+	  "geoip:cn",
+	  "geoip:ru"
+
+	],
+        "outboundTag": "socks5-warp",
+        "type": "field",
+	"ip": [
+    "38.103.114.48/28",
+    "75.192.5.128/28",
+    "104.153.226.0/27",
+    "207.158.128.96/27",
+    "38.0.0.0/8",
+	  "209.130.209.128/27"
+    ]
+      },
+      {
+        "outboundTag": "blocked",
+        "protocol": [
+          "bittorrent"
+        ],
+        "type": "field"
+      },
+      {
+        "outboundTag": "blocked",
+        "domain": [
+            "regexp:.*\\.cn$",
+            "regexp:.*\\.ru$"
+	],
+        "type": "field"
+      }
+    ]
+}
