@@ -93,13 +93,9 @@ Nodes:
 EOF
 
 # === 4.2 Overwrite route.json ===
+# === 4.2 Replace route.json with GitHub version ===
 rm -f /etc/XMPlus/route.json
-cat <<'EOF' > /etc/XMPlus/route.json
-{
-  "domainStrategy": "IPIfNonMatch",
-  "rules": [$(curl -s https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json)]
-}
-EOF
+wget -O /etc/XMPlus/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json
 # === 4.3 Overwrite outbound.json ===
 rm -f /etc/XMPlus/outbound.json
 cat <<EOF > /etc/XMPlus/outbound.json
@@ -155,11 +151,6 @@ unzip pingtunnel_linux_amd64.zip
 cp pingtunnel /usr/local/bin/
 
 # === 10. Optional pingtunnel service ===
-read -p "❓ Create pingtunnel systemd service? (y/n): " setup_pingtunnel
-if [[ "$setup_pingtunnel" == "y" ]]; then
-  read -p "🌐 Enter remote IP: " remote_ip
-  read -p "📣 Enter local listen port (default 443): " local_port
-  local_port=${local_port:-443}
 
   cat <<EOF >/etc/systemd/system/pingtunnel.service
 [Unit]
