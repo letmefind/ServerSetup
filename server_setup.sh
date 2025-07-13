@@ -53,7 +53,7 @@ cp -r /etc/XMPlus /etc/XMPlus02
 
 # === 8. Setup docker-compose environment ===
 mkdir -p /etc/Docker
-cp /etc/XMPlus/config.yml /etc/Docker/docker-compose.yml
+cp /etc/XMPlus/docker-compose.yml /etc/Docker/docker-compose.yml
 
 # === 9. Install rathole ===
 bash <(curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh)
