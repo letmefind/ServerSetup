@@ -163,22 +163,19 @@ if [[ "$setup_pingtunnel" == "y" ]]; then
 
   cat <<EOF >/etc/systemd/system/pingtunnel.service
 [Unit]
-Description=pingtunnel Client
+Description=Pingtunnel Server
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/pingtunnel \\
-  -type client \\
-  -l :$local_port \\
-  -s $remote_ip \\
-  -t $remote_ip:$local_port \\
-  -tcp 1 \\
-  -nolog 1 \\
-  -noprint 1 \\
-  -loglevel none \\
-  -timeout 60 \\
-  -tcp_bs 2097152 \\
-  -tcp_mw 50000
+ExecStart=/usr/local/bin/pingtunnel \
+  -type server \
+  -nolog 1 \
+  -noprint 1 \
+  -loglevel none \
+  -maxconn 500 \
+  -maxprt 200 \
+  -maxprb 5000
+ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.icmp_ratelimit=0; sysctl -w net.ipv4.icmp_ratemask=0'
 Restart=on-failure
 RestartSec=3
 User=root
@@ -186,7 +183,6 @@ WorkingDirectory=/usr/local/bin
 StandardOutput=journal
 StandardError=journal
 LimitNOFILE=65535
-ExecStartPre=/bin/sh -c 'sysctl -w net.ipv4.icmp_ratelimit=0; sysctl -w net.ipv4.icmp_ratemask=0'
 
 [Install]
 WantedBy=multi-user.target
