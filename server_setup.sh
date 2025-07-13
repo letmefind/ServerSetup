@@ -93,6 +93,7 @@ Nodes:
 EOF
 
 # === 4.2 Overwrite route.json ===
+rm -f /etc/XMPlus/route.json
 cat <<EOF > /etc/XMPlus/route.json
 {
   "domainStrategy": "IPIfNonMatch",
@@ -101,6 +102,7 @@ cat <<EOF > /etc/XMPlus/route.json
 EOF
 
 # === 4.3 Overwrite outbound.json ===
+rm -f /etc/XMPlus/outbound.json
 cat <<EOF > /etc/XMPlus/outbound.json
 [
   {
