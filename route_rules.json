@@ -4,7 +4,7 @@
     {
       "outboundTag": "blocked",
       "domain": [
-        "ext:youtube-ads.dat:youtube-ads",
+#        "ext:youtube-ads.dat:youtube-ads",
         "domain:assets.rjassets.com",
         "regexp:.*\\.cn$",
         "regexp:.*\\.ru$"
