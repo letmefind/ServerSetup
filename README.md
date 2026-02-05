@@ -15,6 +15,36 @@ A comprehensive server setup script for configuring Linux servers with Docker, X
 - Root/sudo access
 - Internet connection (unless using offline package)
 
+## Quick Start
+
+### Clone and Run on Server
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/letmefind/ServerSetup.git
+   cd ServerSetup
+   ```
+
+2. **Make the script executable (if needed):**
+   ```bash
+   chmod +x server_setup.sh
+   ```
+
+3. **Run the setup script:**
+   ```bash
+   sudo bash server_setup.sh
+   ```
+
+4. **Follow the interactive prompts** to select which components to install.
+
+### One-Line Installation
+
+You can also clone and run in one command:
+
+```bash
+git clone https://github.com/letmefind/ServerSetup.git && cd ServerSetup && sudo bash server_setup.sh
+```
+
 ## Usage
 
 ### Interactive Installation
