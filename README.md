@@ -80,12 +80,12 @@ sudo bash server_setup.sh
 # Choose option 2: Create offline package
 ```
 
-This will download all dependencies to `/tmp/server-setup-offline-package/`.
+This will download all dependencies to `/tmp/server-setup-offline-install/`.
 
 **To create a tarball:**
 ```bash
 cd /tmp
-tar -czf server-setup-offline.tar.gz server-setup-offline-package/
+tar -czf server-setup-offline.tar.gz server-setup-offline-install/
 ```
 
 ### Installing from Offline Package
@@ -100,7 +100,6 @@ tar -czf server-setup-offline.tar.gz server-setup-offline-package/
    ssh user@server
    cd /root
    tar -xzf server-setup-offline.tar.gz
-   mv server-setup-offline-package server-setup-offline-install
    ```
 
 3. Run the installation:
