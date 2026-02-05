@@ -640,7 +640,7 @@ server_setup_main() {
   require_root
   
   # Check for offline mode
-  if [[ "$1" == "--offline" ]] || [[ -n "$OFFLINE_MODE" ]]; then
+  if [[ "${1:-}" == "--offline" ]] || [[ -n "${OFFLINE_MODE:-}" ]]; then
     if [[ -d "$OFFLINE_INSTALL_DIR" ]]; then
       OFFLINE_MODE="yes"
       echo "📦 Offline mode enabled. Using package from: $OFFLINE_INSTALL_DIR"
