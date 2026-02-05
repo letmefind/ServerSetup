@@ -148,74 +148,64 @@ create_offline_package() {
   echo
   
   mkdir -p "$OFFLINE_PACKAGE_DIR"
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/binaries"
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/scripts"
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/data"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/configs"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/packages"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/docker"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/geo"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/warp"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/rathole"
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/pingtunnel"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/xmplus"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/route"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/docker-compose"
-  
-  mkdir -p "$OFFLINE_PACKAGE_DIR"/install-scripts"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/binaries"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/scripts"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/data"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/configs"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/packages"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/docker"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/geo"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/warp"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/rathole"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/pingtunnel"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/xmplus"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/route"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/docker-compose"
+  mkdir -p "$OFFLINE_PACKAGE_DIR/install-scripts"
   
   # Save this script
-  cp "$0" "$OFFLINE_PACKAGE_DIR"/install-scripts/server_setup.sh"
-  chmod +x "$OFFLINE_PACKAGE_DIR"/install-scripts/server_setup.sh"
+  cp "$0" "$OFFLINE_PACKAGE_DIR/install-scripts/server_setup.sh"
+  chmod +x "$OFFLINE_PACKAGE_DIR/install-scripts/server_setup.sh"
   
   # Save route rules
   if [[ -f "$(dirname "$0")/route_rules.json" ]]; then
-    cp "$(dirname "$0")/route_rules.json" "$OFFLINE_PACKAGE_DIR"/route/route_rules.json"
+    cp "$(dirname "$0")/route_rules.json" "$OFFLINE_PACKAGE_DIR/route/route_rules.json"
   fi
   
   echo ">>> Downloading Docker installation script..."
-  curl -fsSL https://get.docker.com -o "$OFFLINE_PACKAGE_DIR"/scripts/get-docker.sh" || echo "⚠️ Failed to download Docker installer"
+  curl -fsSL https://get.docker.com -o "$OFFLINE_PACKAGE_DIR/scripts/get-docker.sh" || echo "⚠️ Failed to download Docker installer"
   
   echo ">>> Downloading XMPlus Docker ZIP..."
-  wget --no-check-certificate -O "$OFFLINE_PACKAGE_DIR"/xmplus/docker.zip https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip || echo "⚠️ Failed to download XMPlus"
+  wget --no-check-certificate -O "$OFFLINE_PACKAGE_DIR/xmplus/docker.zip" https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip || echo "⚠️ Failed to download XMPlus"
   
   echo ">>> Downloading route.json..."
-  wget -O "$OFFLINE_PACKAGE_DIR"/route/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json || echo "⚠️ Failed to download route.json"
+  wget -O "$OFFLINE_PACKAGE_DIR/route/route.json" https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json || echo "⚠️ Failed to download route.json"
   
   echo ">>> Downloading Geo Data files..."
-  wget -O "$OFFLINE_PACKAGE_DIR"/geo/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat || echo "⚠️ Failed to download geosite.dat"
-  wget -O "$OFFLINE_PACKAGE_DIR"/geo/geoip.dat https://github.com/v2fly/geoip/releases/latest/download/geoip.dat || echo "⚠️ Failed to download geoip.dat"
-  wget -O "$OFFLINE_PACKAGE_DIR"/geo/iran.dat https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat || echo "⚠️ Failed to download iran.dat"
+  wget -O "$OFFLINE_PACKAGE_DIR/geo/geosite.dat" https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat || echo "⚠️ Failed to download geosite.dat"
+  wget -O "$OFFLINE_PACKAGE_DIR/geo/geoip.dat" https://github.com/v2fly/geoip/releases/latest/download/geoip.dat || echo "⚠️ Failed to download geoip.dat"
+  wget -O "$OFFLINE_PACKAGE_DIR/geo/iran.dat" https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat || echo "⚠️ Failed to download iran.dat"
   
   echo ">>> Downloading WARP script..."
-  wget -N -O "$OFFLINE_PACKAGE_DIR"/warp/menu.sh https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh || echo "⚠️ Failed to download WARP script"
+  wget -N -O "$OFFLINE_PACKAGE_DIR/warp/menu.sh" https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh || echo "⚠️ Failed to download WARP script"
   
   echo ">>> Downloading rathole installer..."
-  curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh -o "$OFFLINE_PACKAGE_DIR"/rathole/rathole_v2.sh || echo "⚠️ Failed to download rathole installer"
+  curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh -o "$OFFLINE_PACKAGE_DIR/rathole/rathole_v2.sh" || echo "⚠️ Failed to download rathole installer"
   
   echo ">>> Downloading pingtunnel binary..."
-  wget -O "$OFFLINE_PACKAGE_DIR"/pingtunnel/pingtunnel_linux_amd64.zip https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip || echo "⚠️ Failed to download pingtunnel"
+  wget -O "$OFFLINE_PACKAGE_DIR/pingtunnel/pingtunnel_linux_amd64.zip" https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip || echo "⚠️ Failed to download pingtunnel"
   
   echo ">>> Downloading Docker Compose plugin..."
   # Docker Compose plugin (v2) - we'll download the binary
   local arch="$(uname -m)"
   local os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-  wget -O "$OFFLINE_PACKAGE_DIR"/docker-compose/docker-compose-${os}-${arch}" \
+  wget -O "$OFFLINE_PACKAGE_DIR/docker-compose/docker-compose-${os}-${arch}" \
     "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-${os}-${arch}" || \
-    wget -O "$OFFLINE_PACKAGE_DIR"/docker-compose/docker-compose-${os}-${arch}" \
+    wget -O "$OFFLINE_PACKAGE_DIR/docker-compose/docker-compose-${os}-${arch}" \
     "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-${os}-${arch}" || echo "⚠️ Failed to download docker-compose plugin"
   
   # Create installation instructions
-  cat > "$OFFLINE_PACKAGE_DIR"/README-OFFLINE.txt <<'EOF'
+  cat > "$OFFLINE_PACKAGE_DIR/README-OFFLINE.txt" <<'EOF'
 # Offline Installation Package
 # =========================
 This package contains all dependencies needed for offline server setup.
