@@ -244,7 +244,7 @@ EOF
 # Offline Installation Helper Functions
 # =========================
 use_offline() {
-  [[ -n "$OFFLINE_MODE" ]] && [[ "$OFFLINE_MODE" == "yes" ]]
+  [[ -n "${OFFLINE_MODE:-}" ]] && [[ "${OFFLINE_MODE:-}" == "yes" ]]
 }
 
 get_offline_file() {
@@ -639,8 +639,11 @@ EOF
 server_setup_main() {
   require_root
   
+  # Initialize OFFLINE_MODE if not set
+  OFFLINE_MODE="${OFFLINE_MODE:-no}"
+  
   # Check for offline mode
-  if [[ "${1:-}" == "--offline" ]] || [[ -n "${OFFLINE_MODE:-}" ]]; then
+  if [[ "${1:-}" == "--offline" ]] || [[ "${OFFLINE_MODE:-}" == "yes" ]]; then
     if [[ -d "$OFFLINE_INSTALL_DIR" ]]; then
       OFFLINE_MODE="yes"
       echo "📦 Offline mode enabled. Using package from: $OFFLINE_INSTALL_DIR"
