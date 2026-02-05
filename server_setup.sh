@@ -6,6 +6,9 @@ set -euo pipefail
 # =========================
 PUBKEY="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQD1GDXQ5Xgx4RAKC+wV//OhU5tYFW30TKtVd7+xT8qMKCAR/tXDZ8gP9p/V+6vrPwxyn1ImzDhUCA4NSORTvKe+/XjGKIbte11H05LsRmG9y9oOeMP/aesIgxYkUt9Nuu1CohIsbTGMxHfEUTM4MRfAKE3poxkoshPBv8Lt8o4RKDf91y+ih4rduPmJ++9xV031LXC+EC+bKfD4O+kaGy9WayRMWBrCtCcHhWPsXgQARQs5fjVV1LN4bmaAlVRxzJwBM1dCTqv0s41Y0bjqlzmxySjZDhFUyRnV1aPCFGhgVfoVDRH7s0YfuU/iiH/d+qkLHV4AmUfVV2xBjkncC4JR0i8Q1Gzpfd+JXxUBa/mSqg8E6NK2vXgycgiSy0YRzW5e/T/jlBNGb4RaDPHKVOae5VEnB4XTfPlO1hP/o8dWk2H5YLHrzMgIwjpc0yuhKp6GgNWJQjyMfajy7fPmHtverdP/shh9uon/XK1ylqrdjDuIrWx1nn1FWyKUBJmKVps= arash@Arashs-MacBook-Pro.local"
 
+OFFLINE_PACKAGE_DIR="/tmp/server-setup-offline-package"
+OFFLINE_INSTALL_DIR="/root/server-setup-offline-install"
+
 # =========================
 # Helpers
 # =========================
@@ -19,6 +22,24 @@ require_root() {
 cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 press_enter() { read -rp "Press Enter to continue..."; }
 timestamp() { date '+%Y-%m-%d %H:%M:%S'; }
+
+ask_yes_no() {
+  local prompt="$1"
+  local default="${2:-n}"
+  local response
+  while true; do
+    read -rp "$prompt (y/n) [default: $default]: " response
+    response="${response,,}"
+    [[ -z "$response" ]] && response="$default"
+    if [[ "$response" == "y" ]] || [[ "$response" == "yes" ]]; then
+      return 0
+    elif [[ "$response" == "n" ]] || [[ "$response" == "no" ]]; then
+      return 1
+    else
+      echo "Please enter 'y' or 'n'"
+    fi
+  done
+}
 
 # =========================
 # Cron: restart-rathole.sh
@@ -116,11 +137,169 @@ cron_menu() {
 }
 
 # =========================
-# Your original installer (cleaned)
+# Offline Package Creation
 # =========================
-server_setup_main() {
+create_offline_package() {
   require_root
-  echo ">>> (1) SSH key setup"
+  echo ">>> Creating offline installation package..."
+  
+  echo "This will download all dependencies for offline installation."
+  
+  echo
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/binaries"
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/scripts"
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/data"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/configs"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/packages"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/docker"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/geo"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/warp"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/rathole"
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/pingtunnel"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/xmplus"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/route"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/docker-compose"
+  
+  mkdir -p "$OFFLINE_PACKAGE_DIR"/install-scripts"
+  
+  # Save this script
+  cp "$0" "$OFFLINE_PACKAGE_DIR"/install-scripts/server_setup.sh"
+  chmod +x "$OFFLINE_PACKAGE_DIR"/install-scripts/server_setup.sh"
+  
+  # Save route rules
+  if [[ -f "$(dirname "$0")/route_rules.json" ]]; then
+    cp "$(dirname "$0")/route_rules.json" "$OFFLINE_PACKAGE_DIR"/route/route_rules.json"
+  fi
+  
+  echo ">>> Downloading Docker installation script..."
+  curl -fsSL https://get.docker.com -o "$OFFLINE_PACKAGE_DIR"/scripts/get-docker.sh" || echo "⚠️ Failed to download Docker installer"
+  
+  echo ">>> Downloading XMPlus Docker ZIP..."
+  wget --no-check-certificate -O "$OFFLINE_PACKAGE_DIR"/xmplus/docker.zip https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip || echo "⚠️ Failed to download XMPlus"
+  
+  echo ">>> Downloading route.json..."
+  wget -O "$OFFLINE_PACKAGE_DIR"/route/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json || echo "⚠️ Failed to download route.json"
+  
+  echo ">>> Downloading Geo Data files..."
+  wget -O "$OFFLINE_PACKAGE_DIR"/geo/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat || echo "⚠️ Failed to download geosite.dat"
+  wget -O "$OFFLINE_PACKAGE_DIR"/geo/geoip.dat https://github.com/v2fly/geoip/releases/latest/download/geoip.dat || echo "⚠️ Failed to download geoip.dat"
+  wget -O "$OFFLINE_PACKAGE_DIR"/geo/iran.dat https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat || echo "⚠️ Failed to download iran.dat"
+  
+  echo ">>> Downloading WARP script..."
+  wget -N -O "$OFFLINE_PACKAGE_DIR"/warp/menu.sh https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh || echo "⚠️ Failed to download WARP script"
+  
+  echo ">>> Downloading rathole installer..."
+  curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh -o "$OFFLINE_PACKAGE_DIR"/rathole/rathole_v2.sh || echo "⚠️ Failed to download rathole installer"
+  
+  echo ">>> Downloading pingtunnel binary..."
+  wget -O "$OFFLINE_PACKAGE_DIR"/pingtunnel/pingtunnel_linux_amd64.zip https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip || echo "⚠️ Failed to download pingtunnel"
+  
+  echo ">>> Downloading Docker Compose plugin..."
+  # Docker Compose plugin (v2) - we'll download the binary
+  local arch="$(uname -m)"
+  local os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  wget -O "$OFFLINE_PACKAGE_DIR"/docker-compose/docker-compose-${os}-${arch}" \
+    "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-${os}-${arch}" || \
+    wget -O "$OFFLINE_PACKAGE_DIR"/docker-compose/docker-compose-${os}-${arch}" \
+    "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-${os}-${arch}" || echo "⚠️ Failed to download docker-compose plugin"
+  
+  # Create installation instructions
+  cat > "$OFFLINE_PACKAGE_DIR"/README-OFFLINE.txt <<'EOF'
+# Offline Installation Package
+# =========================
+This package contains all dependencies needed for offline server setup.
+  
+## Installation Steps:
+1. Copy this entire directory to the target server
+2. Run: bash install-scripts/server_setup.sh --offline
+3. Follow the interactive prompts
+  
+## Package Contents:
+- scripts/: Installation scripts
+- binaries/: Binary files
+- data/: Data files
+- configs/: Configuration files
+- packages/: Package files
+- docker/: Docker-related files
+- geo/: GeoIP/Geo data files
+- warp/: WARP script
+- rathole/: Rathole installer
+- pingtunnel/: Pingtunnel binary
+- xmplus/: XMPlus files
+- route/: Route configuration
+- docker-compose/: Docker Compose plugin
+- install-scripts/: Installation scripts
+EOF
+  
+  echo
+  echo "✅ Offline package created at: $OFFLINE_PACKAGE_DIR"
+  echo "   Package size: $(du -sh "$OFFLINE_PACKAGE_DIR" | awk '{print $1}')"
+  echo
+  echo "To create a tarball:"
+  echo "  tar -czf server-setup-offline.tar.gz -C $(dirname "$OFFLINE_PACKAGE_DIR") $(basename "$OFFLINE_PACKAGE_DIR")"
+}
+
+# =========================
+# Offline Installation Helper Functions
+# =========================
+use_offline() {
+  [[ -n "$OFFLINE_MODE" ]] && [[ "$OFFLINE_MODE" == "yes" ]]
+}
+
+get_offline_file() {
+  local file_path="$1"
+  local dest_path="${2:-$file_path}"
+  local source_path="$OFFLINE_INSTALL_DIR/$file_path"
+  
+  if use_offline && [[ -f "$source_path" ]]; then
+    cp "$source_path" "$dest_path"
+    return 0
+  fi
+  return 1
+}
+
+download_or_offline() {
+  local url="$1"
+  local dest="$2"
+  local offline_path="$3"
+  
+  if use_offline && [[ -n "$offline_path" ]] && [[ -f "$OFFLINE_INSTALL_DIR/$offline_path" ]]; then
+    echo "   Using offline file: $offline_path"
+    cp "$OFFLINE_INSTALL_DIR/$offline_path" "$dest"
+    return 0
+  fi
+  
+  # Try to download
+  if [[ "$url" == *"wget"* ]]; then
+    wget "$url" -O "$dest" || return 1
+  else
+    curl "$url" -o "$dest" || return 1
+  fi
+  return 0
+}
+
+# =========================
+# Main Installation Functions
+# =========================
+install_ssh_key() {
+  if ! ask_yes_no ">>> (1) SSH key setup - Install?"; then
+    echo "ℹ️ Skipped SSH key setup."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Setting up SSH key..."
   mkdir -p ~/.ssh
   touch ~/.ssh/authorized_keys
   if ! grep -qF "$PUBKEY" ~/.ssh/authorized_keys; then
@@ -129,47 +308,103 @@ server_setup_main() {
   chmod 600 ~/.ssh/authorized_keys
   chmod 700 ~/.ssh
   echo "✅ Public key added."
+}
 
+install_hostname() {
+  if ! ask_yes_no ">>> (2) Hostname change - Configure?"; then
+    echo "ℹ️ Skipped hostname change."
+    return 0
+  fi
+  
+  require_root
   echo
-  read -rp "❓ Change hostname? (y/n): " change_hostname
-  if [[ "${change_hostname,,}" == "y" ]]; then
-    read -rp "Enter new hostname: " new_hostname
+  read -rp "Enter new hostname: " new_hostname
+  if [[ -n "$new_hostname" ]]; then
     hostnamectl set-hostname "$new_hostname"
     echo "✅ Hostname changed to: $new_hostname"
   fi
+}
 
-  echo
-  echo ">>> (3) Docker & docker-compose"
+install_docker() {
+  if ! ask_yes_no ">>> (3) Docker & Docker Compose - Install?"; then
+    echo "ℹ️ Skipped Docker installation."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Installing Docker..."
+  
   if ! cmd_exists docker; then
-    curl -fsSL https://get.docker.com | bash -s docker
+    if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/scripts/get-docker.sh" ]]; then
+      echo "   Using offline Docker installer..."
+      bash "$OFFLINE_INSTALL_DIR/scripts/get-docker.sh"
+    else
+      curl -fsSL https://get.docker.com | bash -s docker
+    fi
+  else
+    echo "   Docker already installed."
   fi
-
-  if ! [[ -x /usr/local/bin/docker-compose ]]; then
-    curl -L "https://github.com/docker/compose/releases/download/1.26.1/docker-compose-$(uname -s)-$(uname -m)" \
-      -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
+  
+  # Install Docker Compose plugin (v2)
+  echo ">>> Installing Docker Compose plugin..."
+  if ! docker compose version >/dev/null 2>&1; then
+    local arch="$(uname -m)"
+    local os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    local compose_binary="/usr/local/lib/docker/cli-plugins/docker-compose"
+    mkdir -p "$(dirname "$compose_binary")"
+    
+    if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/docker-compose/docker-compose-${os}-${arch}" ]]; then
+      echo "   Using offline Docker Compose plugin..."
+      cp "$OFFLINE_INSTALL_DIR/docker-compose/docker-compose-${os}-${arch}" "$compose_binary"
+      chmod +x "$compose_binary"
+    else
+      echo "   Downloading Docker Compose plugin..."
+      curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-${os}-${arch}" \
+        -o "$compose_binary" || \
+      curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-${os}-${arch}" \
+        -o "$compose_binary"
+      chmod +x "$compose_binary"
+    fi
+    echo "✅ Docker Compose plugin installed."
+  else
+    echo "   Docker Compose already installed."
   fi
-
-  # Enable/start docker (handle both systemd and sysvinit)
+  
+  # Enable/start docker
   systemctl enable docker >/dev/null 2>&1 || true
   systemctl start docker  >/dev/null 2>&1 || true
   service docker start     >/dev/null 2>&1 || true
   chkconfig docker on      >/dev/null 2>&1 || true
+  echo "✅ Docker installed and started."
+}
 
-  echo
-  echo ">>> (4) XMPlus"
+install_xmplus() {
+  if ! ask_yes_no ">>> (4) XMPlus - Install?"; then
+    echo "ℹ️ Skipped XMPlus installation."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Installing XMPlus..."
   mkdir -p /etc/XMPlus
   cd /etc/XMPlus
+  
   if cmd_exists apt; then
     apt update -y
     apt install -y unzip wget
   fi
-
-  wget --no-check-certificate -O docker.zip https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip
+  
+  if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/xmplus/docker.zip" ]]; then
+    echo "   Using offline XMPlus package..."
+    cp "$OFFLINE_INSTALL_DIR/xmplus/docker.zip" /etc/XMPlus/
+  else
+    wget --no-check-certificate -O docker.zip https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip
+  fi
+  
   unzip -o docker.zip
   chmod -R 777 /etc/XMPlus
   rm -f docker.zip
-
+  
   # 4.1 config.yml
   cat > /etc/XMPlus/config.yml <<'EOF'
 Log:
@@ -224,11 +459,16 @@ Nodes:
         Timeout: 5
         Expiry: 60
 EOF
-
-  # 4.2 route.json from GitHub
+  
+  # 4.2 route.json
   rm -f /etc/XMPlus/route.json
-  wget -O /etc/XMPlus/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json
-
+  if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/route/route.json" ]]; then
+    echo "   Using offline route.json..."
+    cp "$OFFLINE_INSTALL_DIR/route/route.json" /etc/XMPlus/route.json
+  else
+    wget -O /etc/XMPlus/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json
+  fi
+  
   # 4.3 outbound.json
   cat > /etc/XMPlus/outbound.json <<'EOF'
 [
@@ -255,42 +495,119 @@ EOF
   }
 ]
 EOF
-
-  # 4.4 docker-compose
+  
+  # 4.4 docker-compose -> docker compose
   mkdir -p /etc/Docker
-  cp -f /etc/XMPlus/docker-compose.yml /etc/Docker/docker-compose.yml
+  if [[ -f /etc/XMPlus/docker-compose.yml ]]; then
+    cp -f /etc/XMPlus/docker-compose.yml /etc/Docker/docker-compose.yml
+    echo "✅ XMPlus configuration copied to /etc/Docker/"
+  fi
+  
+  echo "✅ XMPlus installed."
+}
 
-  echo
-  echo ">>> (5) Geo Data"
-  wget -O /etc/XMPlus/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat
-  wget -O /etc/XMPlus/geoip.dat   https://github.com/v2fly/geoip/releases/latest/download/geoip.dat
-  wget -O /etc/XMPlus/iran.dat    https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat
+install_geo_data() {
+  if ! ask_yes_no ">>> (5) Geo Data files - Download?"; then
+    echo "ℹ️ Skipped Geo Data download."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Downloading Geo Data files..."
+  
+  if use_offline; then
+    if [[ -f "$OFFLINE_INSTALL_DIR/geo/geosite.dat" ]]; then
+      cp "$OFFLINE_INSTALL_DIR/geo/geosite.dat" /etc/XMPlus/
+      echo "   ✅ Copied geosite.dat"
+    fi
+    if [[ -f "$OFFLINE_INSTALL_DIR/geo/geoip.dat" ]]; then
+      cp "$OFFLINE_INSTALL_DIR/geo/geoip.dat" /etc/XMPlus/
+      echo "   ✅ Copied geoip.dat"
+    fi
+    if [[ -f "$OFFLINE_INSTALL_DIR/geo/iran.dat" ]]; then
+      cp "$OFFLINE_INSTALL_DIR/geo/iran.dat" /etc/XMPlus/
+      echo "   ✅ Copied iran.dat"
+    fi
+  else
+    wget -O /etc/XMPlus/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat || echo "⚠️ Failed to download geosite.dat"
+    wget -O /etc/XMPlus/geoip.dat   https://github.com/v2fly/geoip/releases/latest/download/geoip.dat || echo "⚠️ Failed to download geoip.dat"
+    wget -O /etc/XMPlus/iran.dat    https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat || echo "⚠️ Failed to download iran.dat"
+  fi
+  echo "✅ Geo Data files downloaded."
+}
 
-  echo
-  echo ">>> (6) WARP Script (interactive)"
-  wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh
-  bash menu.sh || true
+install_warp() {
+  if ! ask_yes_no ">>> (6) WARP Script - Install?"; then
+    echo "ℹ️ Skipped WARP installation."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Installing WARP Script..."
+  if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/warp/menu.sh" ]]; then
+    echo "   Using offline WARP script..."
+    bash "$OFFLINE_INSTALL_DIR/warp/menu.sh" || true
+  else
+    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh
+    bash menu.sh || true
+  fi
+  echo "✅ WARP script executed."
+}
 
-  echo
-  echo ">>> (7) Duplicate XMPlus dirs to 01/02"
+install_xmplus_duplicates() {
+  if ! ask_yes_no ">>> (7) Duplicate XMPlus dirs to 01/02 - Create?"; then
+    echo "ℹ️ Skipped XMPlus duplicates."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Creating XMPlus duplicates..."
   cp -rf /etc/XMPlus /etc/XMPlus01
   cp -rf /etc/XMPlus /etc/XMPlus02
+  echo "✅ XMPlus directories duplicated."
+}
 
-  echo
-  echo ">>> (8) rathole installer"
-  bash <(curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh) || true
+install_rathole() {
+  if ! ask_yes_no ">>> (8) Rathole installer - Install?"; then
+    echo "ℹ️ Skipped Rathole installation."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Installing Rathole..."
+  if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/rathole/rathole_v2.sh" ]]; then
+    echo "   Using offline Rathole installer..."
+    bash "$OFFLINE_INSTALL_DIR/rathole/rathole_v2.sh" || true
+  else
+    bash <(curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh) || true
+  fi
+  echo "✅ Rathole installation completed."
+}
 
-  echo
-  echo ">>> (9) pingtunnel binary"
+install_pingtunnel() {
+  if ! ask_yes_no ">>> (9) Pingtunnel binary - Install?"; then
+    echo "ℹ️ Skipped Pingtunnel installation."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Installing Pingtunnel..."
   cd /root
-  wget -O pingtunnel_linux_amd64.zip https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip
-  apt install -y unzip || true
-  unzip -o pingtunnel_linux_amd64.zip
+  
+  if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/pingtunnel/pingtunnel_linux_amd64.zip" ]]; then
+    echo "   Using offline Pingtunnel package..."
+    cp "$OFFLINE_INSTALL_DIR/pingtunnel/pingtunnel_linux_amd64.zip" /root/
+    unzip -o pingtunnel_linux_amd64.zip
+  else
+    wget -O pingtunnel_linux_amd64.zip https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip
+    apt install -y unzip || true
+    unzip -o pingtunnel_linux_amd64.zip
+  fi
+  
   cp -f pingtunnel /usr/local/bin/
-
+  
   echo
-  read -rp "Set up pingtunnel as a systemd service? (y/n): " setup_pt
-  if [[ "${setup_pt,,}" == "y" ]]; then
+  if ask_yes_no "Set up pingtunnel as a systemd service?"; then
     cat >/etc/systemd/system/pingtunnel.service <<'EOF'
 [Unit]
 Description=Pingtunnel Server
@@ -324,9 +641,43 @@ EOF
   else
     echo "ℹ️ Skipped pingtunnel systemd setup."
   fi
+}
 
+# =========================
+# Main Installation Flow
+# =========================
+server_setup_main() {
+  require_root
+  
+  # Check for offline mode
+  if [[ "$1" == "--offline" ]] || [[ -n "$OFFLINE_MODE" ]]; then
+    if [[ -d "$OFFLINE_INSTALL_DIR" ]]; then
+      OFFLINE_MODE="yes"
+      echo "📦 Offline mode enabled. Using package from: $OFFLINE_INSTALL_DIR"
+    else
+      echo "⚠️ Offline mode requested but package directory not found: $OFFLINE_INSTALL_DIR"
+      echo "   Please extract the offline package to: $OFFLINE_INSTALL_DIR"
+      exit 1
+    fi
+  fi
+  
+  echo "=========================================="
+  echo "Server Setup Script"
+  echo "=========================================="
   echo
-  echo "🎉 All steps done successfully!"
+  
+  install_ssh_key
+  install_hostname
+  install_docker
+  install_xmplus
+  install_geo_data
+  install_warp
+  install_xmplus_duplicates
+  install_rathole
+  install_pingtunnel
+  
+  echo
+  echo "🎉 All steps completed successfully!"
 }
 
 # =========================
@@ -336,18 +687,45 @@ main_menu() {
   require_root
   while true; do
     echo
-    echo "What do you want to run?"
-    echo "1) server_setup.sh (original flow)"
-    echo "2) Cron tasks"
-    echo "3) Exit"
-    read -rp "Choose an option [1-3]: " choice
+    echo "=========================================="
+    echo "Server Setup Menu"
+    echo "=========================================="
+    echo "1) Run server setup (interactive)"
+    echo "2) Create offline package"
+    echo "3) Cron tasks"
+    echo "4) Exit"
+    read -rp "Choose an option [1-4]: " choice
     case "$choice" in
       1) server_setup_main ; press_enter ;;
-      2) cron_menu ;;
-      3) exit 0 ;;
+      2) create_offline_package ; press_enter ;;
+      3) cron_menu ;;
+      4) exit 0 ;;
       *) echo "Invalid choice." ;;
     esac
   done
 }
 
-main_menu
+# Check for command line arguments
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    --offline)
+      OFFLINE_INSTALL_DIR="${2:-$OFFLINE_INSTALL_DIR}"
+      if [[ -z "$OFFLINE_INSTALL_DIR" ]]; then
+        echo "Usage: $0 --offline [package-directory]"
+        echo "Example: $0 --offline /root/server-setup-offline-install"
+        exit 1
+      fi
+      server_setup_main --offline
+      ;;
+    --create-package)
+      create_offline_package
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 [--offline [dir] | --create-package]"
+      exit 1
+      ;;
+  esac
+else
+  main_menu
+fi
