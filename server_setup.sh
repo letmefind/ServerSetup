@@ -26,25 +26,37 @@ cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 safe_read() {
   local prompt="$1"
   local var_name="$2"
+  local tty_available=false
   
-  # Check if stdin is a terminal (not piped)
-  if [[ -t 0 ]]; then
-    # Normal terminal, read from stdin
+  # Check if /dev/tty is available and readable
+  if [[ -r /dev/tty ]] 2>/dev/null && [[ -c /dev/tty ]] 2>/dev/null; then
+    tty_available=true
+  fi
+  
+  # If stdin is not a terminal (piped), always try /dev/tty
+  if [[ ! -t 0 ]] && [[ "$tty_available" == "true" ]]; then
+    # Piped input, read from /dev/tty
+    read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || {
+      # If /dev/tty fails, try stdin as fallback
+      read -rp "$prompt" "$var_name" || eval "$var_name=\"\""
+    }
+  elif [[ -t 0 ]]; then
+    # Normal terminal input
     read -rp "$prompt" "$var_name"
-  elif [[ -r /dev/tty ]] 2>/dev/null; then
-    # Piped, read from /dev/tty
-    read -rp "$prompt" "$var_name" </dev/tty
+  elif [[ "$tty_available" == "true" ]]; then
+    # Not a terminal but /dev/tty available, use it
+    read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || eval "$var_name=\"\""
   else
-    # Fallback to stdin (might not work when piped)
-    read -rp "$prompt" "$var_name" || true
+    # Last resort: try stdin
+    read -rp "$prompt" "$var_name" || eval "$var_name=\"\""
   fi
 }
 
 press_enter() { 
-  if [[ -t 0 ]]; then
+  if [[ -r /dev/tty ]] 2>/dev/null && [[ -c /dev/tty ]] 2>/dev/null && [[ ! -t 0 ]]; then
+    read -rp "Press Enter to continue..." </dev/tty 2>/dev/null || true
+  elif [[ -t 0 ]]; then
     read -rp "Press Enter to continue..."
-  elif [[ -r /dev/tty ]] 2>/dev/null; then
-    read -rp "Press Enter to continue..." </dev/tty
   else
     read -rp "Press Enter to continue..." || true
   fi

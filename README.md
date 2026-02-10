@@ -4,11 +4,31 @@ A comprehensive server setup script for configuring Linux servers with Docker, X
 
 ## 🚀 Quick Install
 
-Copy and paste this command to run the script directly on your server:
+### Option 1: Download and Run (Recommended)
+
+Download the script first, then run it:
+
+```bash
+wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh
+sudo bash server_setup.sh
+```
+
+Or with curl:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh -o server_setup.sh
+sudo bash server_setup.sh
+```
+
+### Option 2: Direct Pipe (May require TTY access)
+
+If your system allows TTY access when using sudo with pipes:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh | sudo bash
 ```
+
+**Note**: If the piped version hangs or doesn't accept input, use Option 1 instead.
 
 ## Features
 
