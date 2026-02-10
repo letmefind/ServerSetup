@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ensure we can read from terminal when piped
-# Redirect /dev/tty to stdin if we're being piped and /dev/tty is available
-if [[ ! -t 0 ]] && [[ -r /dev/tty ]] 2>/dev/null; then
-  exec < /dev/tty
-fi
-
 # =========================
 # Config
 # =========================
@@ -33,20 +27,26 @@ safe_read() {
   local prompt="$1"
   local var_name="$2"
   
-  # Always try /dev/tty first (works when piped and when run normally)
-  if [[ -r /dev/tty ]] 2>/dev/null; then
-    read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || read -rp "$prompt" "$var_name"
-  else
-    # Fallback to stdin (only works when not piped)
+  # Check if stdin is a terminal (not piped)
+  if [[ -t 0 ]]; then
+    # Normal terminal, read from stdin
     read -rp "$prompt" "$var_name"
+  elif [[ -r /dev/tty ]] 2>/dev/null; then
+    # Piped, read from /dev/tty
+    read -rp "$prompt" "$var_name" </dev/tty
+  else
+    # Fallback to stdin (might not work when piped)
+    read -rp "$prompt" "$var_name" || true
   fi
 }
 
 press_enter() { 
-  if [[ -r /dev/tty ]] 2>/dev/null; then
-    read -rp "Press Enter to continue..." </dev/tty 2>/dev/null || read -rp "Press Enter to continue..."
-  else
+  if [[ -t 0 ]]; then
     read -rp "Press Enter to continue..."
+  elif [[ -r /dev/tty ]] 2>/dev/null; then
+    read -rp "Press Enter to continue..." </dev/tty
+  else
+    read -rp "Press Enter to continue..." || true
   fi
 }
 timestamp() { date '+%Y-%m-%d %H:%M:%S'; }
