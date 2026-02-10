@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Check if script is piped and can't read from terminal
+if [[ ! -t 0 ]]; then
+  # Script is being piped, check if we can access /dev/tty
+  if [[ ! -r /dev/tty ]] 2>/dev/null || [[ ! -c /dev/tty ]] 2>/dev/null; then
+    echo "⚠️  This script requires interactive input."
+    echo ""
+    echo "When piping to sudo, terminal access may be restricted."
+    echo "Please download the script first:"
+    echo ""
+    echo "  wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh"
+    echo "  sudo bash server_setup.sh"
+    echo ""
+    echo "Or use curl:"
+    echo "  curl -fsSL https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh -o server_setup.sh"
+    echo "  sudo bash server_setup.sh"
+    exit 1
+  fi
+fi
+
 # =========================
 # Config
 # =========================
@@ -26,29 +45,30 @@ cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 safe_read() {
   local prompt="$1"
   local var_name="$2"
-  local tty_available=false
   
-  # Check if /dev/tty is available and readable
-  if [[ -r /dev/tty ]] 2>/dev/null && [[ -c /dev/tty ]] 2>/dev/null; then
-    tty_available=true
+  # If stdin is a terminal, use it normally
+  if [[ -t 0 ]]; then
+    read -rp "$prompt" "$var_name"
+    return
   fi
   
-  # If stdin is not a terminal (piped), always try /dev/tty
-  if [[ ! -t 0 ]] && [[ "$tty_available" == "true" ]]; then
-    # Piped input, read from /dev/tty
+  # When piped, try /dev/tty
+  # Note: This may not work with "sudo" due to TTY restrictions
+  if [[ -r /dev/tty ]] 2>/dev/null && [[ -c /dev/tty ]] 2>/dev/null; then
     read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || {
-      # If /dev/tty fails, try stdin as fallback
-      read -rp "$prompt" "$var_name" || eval "$var_name=\"\""
+      echo ""
+      echo "⚠️  Cannot read input when piped with sudo."
+      echo "   Please download the script first:"
+      echo "   wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh"
+      echo "   sudo bash server_setup.sh"
+      exit 1
     }
-  elif [[ -t 0 ]]; then
-    # Normal terminal input
-    read -rp "$prompt" "$var_name"
-  elif [[ "$tty_available" == "true" ]]; then
-    # Not a terminal but /dev/tty available, use it
-    read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || eval "$var_name=\"\""
   else
-    # Last resort: try stdin
-    read -rp "$prompt" "$var_name" || eval "$var_name=\"\""
+    echo ""
+    echo "⚠️  Cannot read input. Please download the script first:"
+    echo "   wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh"
+    echo "   sudo bash server_setup.sh"
+    exit 1
   fi
 }
 
