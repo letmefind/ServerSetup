@@ -630,28 +630,49 @@ install_system_optimizations() {
   cat >> /etc/sysctl.conf <<'EOF'
 
 # Server Setup Script - System Optimizations
-# فعال‌سازی BBR برای TCP
+# --- General Network Security & Optimization ---
+# فعال‌سازی الگوریتم BBR برای سرعت بهتر
 net.core.default_qdisc = fq
 net.ipv4.tcp_congestion_control = bbr
 
-# افزایش صف‌های انتظار (Backlog) برای جلوگیری از دراپ شدن کانکشن
+# --- Connection Limits (Backlogs) ---
+# افزایش صف‌های انتظار برای جلوگیری از ریجکت شدن کانکشن‌های جدید
 net.core.somaxconn = 65535
 net.core.netdev_max_backlog = 10000
 net.ipv4.tcp_max_syn_backlog = 8192
+net.ipv4.tcp_fastopen = 3
 
-# مدیریت بافرهای TCP/UDP (بهینه شده برای 2GB رم)
-# اعداد زیر (16MB max) کافی هستند و جلوی پر شدن رم را می‌گیرند
-net.core.rmem_max = 16777216
-net.core.wmem_max = 16777216
-net.ipv4.tcp_rmem = 4096 87380 16777216
-net.ipv4.tcp_wmem = 4096 65536 16777216
+# --- Memory Management (Safe for 2GB RAM) ---
+# محدود کردن بافرها به ~25MB. مقادیر قبلی (134MB) باعث کرش رم می‌شدند.
+net.core.rmem_default = 1048576
+net.core.wmem_default = 1048576
+net.core.rmem_max = 26214400
+net.core.wmem_max = 26214400
+
+# تنظیمات TCP Memory (Low, Pressure, Max)
+net.ipv4.tcp_rmem = 4096 87380 26214400
+net.ipv4.tcp_wmem = 4096 65536 26214400
+
+# تنظیمات UDP Memory (برای KCP حیاتی است)
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
 net.ipv4.udp_mem = 8192 262144 536870912
 
-# بازیافت سریع پورت‌ها و فایل‌ها
+# --- Timeouts & Keepalive ---
+# بازیافت سریع پورت‌های استفاده شده
 net.ipv4.tcp_tw_reuse = 1
 net.ipv4.tcp_fin_timeout = 30
 net.ipv4.ip_local_port_range = 1024 65000
+
+# مدیریت کانکشن‌های مرده (Dead Connections)
+net.ipv4.tcp_keepalive_time = 300
+net.ipv4.tcp_keepalive_intvl = 15
+net.ipv4.tcp_keepalive_probes = 5
+
+# --- System Limits ---
 fs.file-max = 1000000
+net.netfilter.nf_conntrack_max = 1000000
+net.netfilter.nf_conntrack_tcp_timeout_established = 1200
 EOF
   
   # Apply sysctl settings
