@@ -48,26 +48,34 @@ safe_read() {
   
   # If stdin is a terminal, use it normally
   if [[ -t 0 ]]; then
-    read -rp "$prompt" "$var_name"
+    if [[ -n "$prompt" ]]; then
+      read -rp "$prompt" "$var_name"
+    else
+      read -r "$var_name"
+    fi
     return
   fi
   
   # When piped, try /dev/tty
   # Note: This may not work with "sudo" due to TTY restrictions
   if [[ -r /dev/tty ]] 2>/dev/null && [[ -c /dev/tty ]] 2>/dev/null; then
-    read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || {
-      echo ""
-      echo "⚠️  Cannot read input when piped with sudo."
-      echo "   Please download the script first:"
-      echo "   wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh"
-      echo "   sudo bash server_setup.sh"
+    # Ensure prompt is displayed on /dev/tty if provided
+    if [[ -n "$prompt" ]]; then
+      echo -n "$prompt" >/dev/tty 2>&1 || true
+    fi
+    read -r "$var_name" </dev/tty 2>/dev/null || {
+      echo "" >&2
+      echo "⚠️  Cannot read input when piped with sudo." >&2
+      echo "   Please download the script first:" >&2
+      echo "   wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh" >&2
+      echo "   sudo bash server_setup.sh" >&2
       exit 1
     }
   else
-    echo ""
-    echo "⚠️  Cannot read input. Please download the script first:"
-    echo "   wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh"
-    echo "   sudo bash server_setup.sh"
+    echo "" >&2
+    echo "⚠️  Cannot read input. Please download the script first:" >&2
+    echo "   wget https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh" >&2
+    echo "   sudo bash server_setup.sh" >&2
     exit 1
   fi
 }
@@ -87,8 +95,17 @@ ask_yes_no() {
   local prompt="$1"
   local default="${2:-n}"
   local response
+  local full_prompt="$prompt (y/n) [default: $default]: "
+  
   while true; do
-    safe_read "$prompt (y/n) [default: $default]: " response
+    # Display prompt - use /dev/tty if we're piped, otherwise stdout
+    if [[ ! -t 0 ]] && [[ -c /dev/tty ]] 2>/dev/null; then
+      echo -n "$full_prompt" >/dev/tty
+    else
+      echo -n "$full_prompt"
+    fi
+    
+    safe_read "" response
     response="${response,,}"
     [[ -z "$response" ]] && response="$default"
     if [[ "$response" == "y" ]] || [[ "$response" == "yes" ]]; then
@@ -96,7 +113,11 @@ ask_yes_no() {
     elif [[ "$response" == "n" ]] || [[ "$response" == "no" ]]; then
       return 1
     else
-      echo "Please enter 'y' or 'n'"
+      if [[ ! -t 0 ]] && [[ -c /dev/tty ]] 2>/dev/null; then
+        echo "Please enter 'y' or 'n'" >/dev/tty
+      else
+        echo "Please enter 'y' or 'n'"
+      fi
     fi
   done
 }
