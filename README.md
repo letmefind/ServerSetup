@@ -2,6 +2,14 @@
 
 A comprehensive server setup script for configuring Linux servers with Docker, XMPlus, WARP, Rathole, Pingtunnel, and other tools.
 
+## 🚀 Quick Install
+
+Copy and paste this command to run the script directly on your server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh | sudo bash
+```
+
 ## Features
 
 - ✅ **Interactive Installation**: Choose which components to install
@@ -17,7 +25,25 @@ A comprehensive server setup script for configuring Linux servers with Docker, X
 
 ## Quick Start
 
+### One-Line Installation (Recommended)
+
+Run the script directly from GitHub without cloning:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh | sudo bash
+```
+
+Or using wget:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/letmefind/ServerSetup/main/server_setup.sh | sudo bash
+```
+
+**That's it!** The script will download and run, prompting you to select which components to install.
+
 ### Clone and Run on Server
+
+Alternatively, you can clone the repository first:
 
 1. **Clone the repository:**
    ```bash
@@ -37,9 +63,7 @@ A comprehensive server setup script for configuring Linux servers with Docker, X
 
 4. **Follow the interactive prompts** to select which components to install.
 
-### One-Line Installation
-
-You can also clone and run in one command:
+Or clone and run in one command:
 
 ```bash
 git clone https://github.com/letmefind/ServerSetup.git && cd ServerSetup && sudo bash server_setup.sh
