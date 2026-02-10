@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure we can read from terminal when piped
+# Redirect /dev/tty to stdin if we're being piped and /dev/tty is available
+if [[ ! -t 0 ]] && [[ -r /dev/tty ]] 2>/dev/null; then
+  exec < /dev/tty
+fi
+
 # =========================
 # Config
 # =========================
@@ -22,20 +28,23 @@ require_root() {
 cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 
 # Helper function to read from terminal when piped
+# When script is piped (curl | bash), stdin is the pipe, so we must read from /dev/tty
 safe_read() {
   local prompt="$1"
   local var_name="$2"
-  # Check if we can read from /dev/tty (when piped, stdin is pipe, but /dev/tty is terminal)
-  if [[ -r /dev/tty ]]; then
-    read -rp "$prompt" "$var_name" </dev/tty
+  
+  # Always try /dev/tty first (works when piped and when run normally)
+  if [[ -r /dev/tty ]] 2>/dev/null; then
+    read -rp "$prompt" "$var_name" </dev/tty 2>/dev/null || read -rp "$prompt" "$var_name"
   else
+    # Fallback to stdin (only works when not piped)
     read -rp "$prompt" "$var_name"
   fi
 }
 
 press_enter() { 
-  if [[ -r /dev/tty ]]; then
-    read -rp "Press Enter to continue..." </dev/tty
+  if [[ -r /dev/tty ]] 2>/dev/null; then
+    read -rp "Press Enter to continue..." </dev/tty 2>/dev/null || read -rp "Press Enter to continue..."
   else
     read -rp "Press Enter to continue..."
   fi
@@ -348,7 +357,7 @@ install_docker() {
       echo "   Using offline Docker installer..."
       bash "$OFFLINE_INSTALL_DIR/scripts/get-docker.sh"
     else
-      curl -fsSL https://get.docker.com | bash -s docker
+    curl -fsSL https://get.docker.com | bash -s docker
     fi
   else
     echo "   Docker already installed."
@@ -402,18 +411,18 @@ install_xmplus() {
     apt update -y
     apt install -y unzip wget
   fi
-  
+
   if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/xmplus/docker.zip" ]]; then
     echo "   Using offline XMPlus package..."
     cp "$OFFLINE_INSTALL_DIR/xmplus/docker.zip" /etc/XMPlus/
   else
-    wget --no-check-certificate -O docker.zip https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip
+  wget --no-check-certificate -O docker.zip https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip
   fi
   
   unzip -o docker.zip
   chmod -R 777 /etc/XMPlus
   rm -f docker.zip
-  
+
   # 4.1 config.yml
   cat > /etc/XMPlus/config.yml <<'EOF'
 Log:
@@ -468,16 +477,16 @@ Nodes:
         Timeout: 5
         Expiry: 60
 EOF
-  
+
   # 4.2 route.json
   rm -f /etc/XMPlus/route.json
   if use_offline && [[ -f "$OFFLINE_INSTALL_DIR/route/route.json" ]]; then
     echo "   Using offline route.json..."
     cp "$OFFLINE_INSTALL_DIR/route/route.json" /etc/XMPlus/route.json
   else
-    wget -O /etc/XMPlus/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json
+  wget -O /etc/XMPlus/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json
   fi
-  
+
   # 4.3 outbound.json
   cat > /etc/XMPlus/outbound.json <<'EOF'
 [
@@ -504,7 +513,7 @@ EOF
   }
 ]
 EOF
-  
+
   # 4.4 docker-compose.yml with optimizations
   mkdir -p /etc/Docker
   cat > /etc/Docker/docker-compose.yml <<EOF
@@ -673,8 +682,8 @@ install_warp() {
     echo "   Using offline WARP script..."
     bash "$OFFLINE_INSTALL_DIR/warp/menu.sh" || true
   else
-    wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh
-    bash menu.sh || true
+  wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh
+  bash menu.sh || true
   fi
   echo "✅ WARP script executed."
 }
@@ -704,7 +713,7 @@ install_rathole() {
     echo "   Using offline Rathole installer..."
     bash "$OFFLINE_INSTALL_DIR/rathole/rathole_v2.sh" || true
   else
-    bash <(curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh) || true
+  bash <(curl -Ls --ipv4 https://raw.githubusercontent.com/Musixal/rathole-tunnel/main/rathole_v2.sh) || true
   fi
   echo "✅ Rathole installation completed."
 }
@@ -724,13 +733,13 @@ install_pingtunnel() {
     cp "$OFFLINE_INSTALL_DIR/pingtunnel/pingtunnel_linux_amd64.zip" /root/
     unzip -o pingtunnel_linux_amd64.zip
   else
-    wget -O pingtunnel_linux_amd64.zip https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip
-    apt install -y unzip || true
-    unzip -o pingtunnel_linux_amd64.zip
+  wget -O pingtunnel_linux_amd64.zip https://github.com/esrrhs/pingtunnel/releases/download/2.8/pingtunnel_linux_amd64.zip
+  apt install -y unzip || true
+  unzip -o pingtunnel_linux_amd64.zip
   fi
   
   cp -f pingtunnel /usr/local/bin/
-  
+
   echo
   if ask_yes_no "Set up pingtunnel as a systemd service?"; then
     cat >/etc/systemd/system/pingtunnel.service <<'EOF'
@@ -856,5 +865,5 @@ if [[ $# -gt 0 ]]; then
       ;;
   esac
 else
-  main_menu
+main_menu
 fi
