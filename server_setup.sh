@@ -20,7 +20,26 @@ require_root() {
 }
 
 cmd_exists() { command -v "$1" >/dev/null 2>&1; }
-press_enter() { read -rp "Press Enter to continue..."; }
+
+# Helper function to read from terminal when piped
+safe_read() {
+  local prompt="$1"
+  local var_name="$2"
+  # Check if we can read from /dev/tty (when piped, stdin is pipe, but /dev/tty is terminal)
+  if [[ -r /dev/tty ]]; then
+    read -rp "$prompt" "$var_name" </dev/tty
+  else
+    read -rp "$prompt" "$var_name"
+  fi
+}
+
+press_enter() { 
+  if [[ -r /dev/tty ]]; then
+    read -rp "Press Enter to continue..." </dev/tty
+  else
+    read -rp "Press Enter to continue..."
+  fi
+}
 timestamp() { date '+%Y-%m-%d %H:%M:%S'; }
 
 ask_yes_no() {
@@ -28,7 +47,7 @@ ask_yes_no() {
   local default="${2:-n}"
   local response
   while true; do
-    read -rp "$prompt (y/n) [default: $default]: " response
+    safe_read "$prompt (y/n) [default: $default]: " response
     response="${response,,}"
     [[ -z "$response" ]] && response="$default"
     if [[ "$response" == "y" ]] || [[ "$response" == "yes" ]]; then
@@ -125,7 +144,7 @@ cron_menu() {
     echo "2) Remove that cron job"
     echo "3) Show root crontab"
     echo "4) Back to main menu"
-    read -rp "Choose an option [1-4]: " c
+    safe_read "Choose an option [1-4]: " c
     case "$c" in
       1) install_rathole_restart_cron ;;
       2) remove_rathole_restart_cron ;;
@@ -308,7 +327,7 @@ install_hostname() {
   
   require_root
   echo
-  read -rp "Enter new hostname: " new_hostname
+  safe_read "Enter new hostname: " new_hostname
   if [[ -n "$new_hostname" ]]; then
     hostnamectl set-hostname "$new_hostname"
     echo "✅ Hostname changed to: $new_hostname"
@@ -804,7 +823,7 @@ main_menu() {
     echo "2) Create offline package"
     echo "3) Cron tasks"
     echo "4) Exit"
-    read -rp "Choose an option [1-4]: " choice
+    safe_read "Choose an option [1-4]: " choice
     case "$choice" in
       1) server_setup_main ; press_enter ;;
       2) create_offline_package ; press_enter ;;
