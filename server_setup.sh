@@ -486,14 +486,130 @@ EOF
 ]
 EOF
   
-  # 4.4 docker-compose -> docker compose
+  # 4.4 docker-compose.yml with optimizations
   mkdir -p /etc/Docker
-  if [[ -f /etc/XMPlus/docker-compose.yml ]]; then
-    cp -f /etc/XMPlus/docker-compose.yml /etc/Docker/docker-compose.yml
-    echo "✅ XMPlus configuration copied to /etc/Docker/"
+  cat > /etc/Docker/docker-compose.yml <<EOF
+version: '3.8'
+services:
+  xray-server:
+    image: ghcr.io/xmplusdev/xmplus:latest
+    restart: always
+    network_mode: host
+    volumes:
+      - /etc/XMPlus:/etc/XMPlus/
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+      nproc: 65535
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+EOF
+  
+  # Also copy to XMPlus directory if it exists
+  if [[ -d /etc/XMPlus ]]; then
+    cp -f /etc/Docker/docker-compose.yml /etc/XMPlus/docker-compose.yml
   fi
   
   echo "✅ XMPlus installed."
+}
+
+install_system_optimizations() {
+  if ! ask_yes_no ">>> (3.5) System Optimizations (BBR, TCP tuning, Ulimit) - Apply?"; then
+    echo "ℹ️ Skipped system optimizations."
+    return 0
+  fi
+  
+  require_root
+  echo ">>> Applying system optimizations..."
+  
+  # 1. Sysctl settings for BBR and TCP optimization
+  echo ">>> Configuring sysctl settings..."
+  cat >> /etc/sysctl.conf <<'EOF'
+
+# Server Setup Script - System Optimizations
+# فعال‌سازی BBR برای TCP
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+
+# افزایش صف‌های انتظار (Backlog) برای جلوگیری از دراپ شدن کانکشن
+net.core.somaxconn = 65535
+net.core.netdev_max_backlog = 10000
+net.ipv4.tcp_max_syn_backlog = 8192
+
+# مدیریت بافرهای TCP/UDP (بهینه شده برای 2GB رم)
+# اعداد زیر (16MB max) کافی هستند و جلوی پر شدن رم را می‌گیرند
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 65536 16777216
+net.ipv4.udp_mem = 8192 262144 536870912
+
+# بازیافت سریع پورت‌ها و فایل‌ها
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.ip_local_port_range = 1024 65000
+fs.file-max = 1000000
+EOF
+  
+  # Apply sysctl settings
+  sysctl -p >/dev/null 2>&1 || true
+  echo "   ✅ Sysctl settings applied"
+  
+  # 2. Ulimit settings for file descriptors
+  echo ">>> Configuring ulimit settings..."
+  if ! grep -qF "* soft nofile 65535" /etc/security/limits.conf; then
+    echo "* soft nofile 65535" >> /etc/security/limits.conf
+  fi
+  if ! grep -qF "* hard nofile 65535" /etc/security/limits.conf; then
+    echo "* hard nofile 65535" >> /etc/security/limits.conf
+  fi
+  echo "   ✅ Ulimit settings configured"
+  
+  # 3. Network interface queue length (apply to loopback and primary interface)
+  echo ">>> Configuring network interface queue lengths..."
+  ip link set lo txqueuelen 5000 2>/dev/null || true
+  
+  # Detect primary network interface
+  primary_iface=$(ip route | grep default | awk '{print $5}' | head -n1)
+  if [[ -n "$primary_iface" ]]; then
+    ip link set "$primary_iface" txqueuelen 5000 2>/dev/null || true
+    echo "   ✅ Configured queue length for $primary_iface"
+  else
+    # Fallback to common interface names
+    for iface in eth0 ens3 ens33 enp0s3; do
+      if ip link show "$iface" >/dev/null 2>&1; then
+        ip link set "$iface" txqueuelen 5000 2>/dev/null || true
+        echo "   ✅ Configured queue length for $iface"
+        break
+      fi
+    done
+  fi
+  
+  # Create systemd service to apply network settings on boot
+  cat > /etc/systemd/system/network-optimization.service <<'EOF'
+[Unit]
+Description=Network Interface Queue Optimization
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'ip link set lo txqueuelen 5000; for iface in $(ip route | grep default | awk "{print \$5}" | head -n1); do ip link set $iface txqueuelen 5000 2>/dev/null || true; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  
+  systemctl daemon-reload
+  systemctl enable network-optimization.service >/dev/null 2>&1 || true
+  echo "   ✅ Network optimization service created"
+  
+  echo "✅ System optimizations applied."
+  echo "   Note: Some settings require reboot to take full effect."
 }
 
 install_geo_data() {
@@ -662,6 +778,7 @@ server_setup_main() {
   install_ssh_key
   install_hostname
   install_docker
+  install_system_optimizations
   install_xmplus
   install_geo_data
   install_warp

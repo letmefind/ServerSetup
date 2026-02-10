@@ -59,12 +59,13 @@ The script will ask you for each component:
 1. SSH key setup
 2. Hostname change
 3. Docker & Docker Compose
-4. XMPlus
-5. Geo Data files
-6. WARP Script
-7. XMPlus duplicates (01/02)
-8. Rathole installer
-9. Pingtunnel binary
+4. System Optimizations (BBR, TCP tuning, Ulimit, Network queues)
+5. XMPlus
+6. Geo Data files
+7. WARP Script
+8. XMPlus duplicates (01/02)
+9. Rathole installer
+10. Pingtunnel binary
 
 ### Creating an Offline Package
 
@@ -121,30 +122,47 @@ Optionally change the server hostname.
 - Installs Docker Compose plugin (v2) - uses `docker compose` command
 - Enables and starts Docker service
 
-### 4. XMPlus
+### 4. System Optimizations
+Applies system-level optimizations for better performance:
+- **BBR TCP Congestion Control**: Enables BBR for improved network throughput
+- **TCP/UDP Buffer Tuning**: Optimizes buffer sizes for 2GB RAM servers
+- **Connection Queue Optimization**: Increases backlog queues to prevent connection drops
+- **File Descriptor Limits**: Increases ulimit (nofile) to 65535
+- **Network Interface Queues**: Sets txqueuelen to 5000 for better packet handling
+- **Port Range Optimization**: Configures local port range and TCP timeouts
+- Creates systemd service to persist network optimizations across reboots
+
+**Note**: Some settings require a reboot to take full effect.
+
+### 5. XMPlus
 - Downloads XMPlus Docker configuration
 - Sets up configuration files:
   - `config.yml`
   - `route.json` (from repository)
   - `outbound.json`
-- Copies docker-compose.yml to `/etc/Docker/`
+- Creates optimized `docker-compose.yml` with:
+  - Network mode: host (reduces Docker network overhead)
+  - Ulimit settings: 65535 file descriptors
+  - Log rotation: Max 10MB per file, 3 files max
+  - Auto-restart: always
+- Saves docker-compose.yml to `/etc/Docker/` and `/etc/XMPlus/`
 
-### 5. Geo Data Files
+### 6. Geo Data Files
 Downloads geo data files:
 - `geosite.dat` - Domain list
 - `geoip.dat` - IP geolocation
 - `iran.dat` - Iran-specific domains
 
-### 6. WARP Script
+### 7. WARP Script
 Downloads and runs the WARP configuration script.
 
-### 7. XMPlus Duplicates
+### 8. XMPlus Duplicates
 Creates duplicate XMPlus directories (`/etc/XMPlus01` and `/etc/XMPlus02`).
 
-### 8. Rathole
+### 9. Rathole
 Installs Rathole tunnel service.
 
-### 9. Pingtunnel
+### 10. Pingtunnel
 - Downloads Pingtunnel binary
 - Optionally sets up as systemd service
 
