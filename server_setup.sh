@@ -40,6 +40,18 @@ require_root() {
 
 cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# Helper function to write to terminal when piped
+# Ensures output is visible even when script is piped
+safe_echo() {
+  if [[ ! -t 1 ]] && [[ -c /dev/tty ]] 2>/dev/null; then
+    # Piped, write to /dev/tty
+    echo "$@" >/dev/tty
+  else
+    # Normal output
+    echo "$@"
+  fi
+}
+
 # Helper function to read from terminal when piped
 # When script is piped (curl | bash), stdin is the pipe, so we must read from /dev/tty
 safe_read() {
@@ -199,6 +211,12 @@ show_root_crontab() {
 }
 
 cron_menu() {
+  # Redirect output to /dev/tty if piped
+  if [[ ! -t 1 ]] && [[ -c /dev/tty ]] 2>/dev/null; then
+    exec 1>/dev/tty
+    exec 2>/dev/tty
+  fi
+  
   while true; do
     echo
     echo "Cron Jobs Menu"
@@ -836,6 +854,12 @@ EOF
 server_setup_main() {
   require_root
   
+  # Redirect output to /dev/tty if piped (so user can see prompts and messages)
+  if [[ ! -t 1 ]] && [[ -c /dev/tty ]] 2>/dev/null; then
+    exec 1>/dev/tty
+    exec 2>/dev/tty
+  fi
+  
   # Initialize OFFLINE_MODE if not set
   OFFLINE_MODE="${OFFLINE_MODE:-no}"
   
@@ -876,6 +900,13 @@ server_setup_main() {
 # =========================
 main_menu() {
   require_root
+  
+  # Redirect output to /dev/tty if piped (so user can see prompts and messages)
+  if [[ ! -t 1 ]] && [[ -c /dev/tty ]] 2>/dev/null; then
+    exec 1>/dev/tty
+    exec 2>/dev/tty
+  fi
+  
   while true; do
     echo
     echo "=========================================="
