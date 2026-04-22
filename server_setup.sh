@@ -49,7 +49,7 @@ write_xmplus_route_json() {
   "rules": [
     {
       "type": "field",
-      "outboundTag": "block",
+      "outboundTag": "blocked",
       "domain": [
         "geosite:category-ads-all",
         "geosite:malware",
@@ -61,7 +61,7 @@ write_xmplus_route_json() {
     },
     {
       "type": "field",
-      "outboundTag": "block",
+      "outboundTag": "blocked",
       "ip": [
         "geoip:malware",
         "geoip:phishing",
@@ -71,7 +71,7 @@ write_xmplus_route_json() {
     },
     {
       "type": "field",
-      "outboundTag": "warp",
+      "outboundTag": "socks5-warp",
       "domain": [
         "geosite:sanctioned",
         "geosite:social",
@@ -103,7 +103,7 @@ write_xmplus_route_json() {
     },
     {
       "type": "field",
-      "outboundTag": "warp",
+      "outboundTag": "socks5-warp",
       "ip": [
         "geoip:openai",
         "geoip:telegram",
@@ -689,10 +689,10 @@ EOF
   {
     "protocol": "blackhole",
     "settings": {},
-    "tag": "block"
+    "tag": "blocked"
   },
   {
-    "tag": "warp",
+    "tag": "socks5-warp",
     "protocol": "socks",
     "settings": {
       "servers": [

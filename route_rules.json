@@ -3,7 +3,7 @@
   "rules": [
     {
       "type": "field",
-      "outboundTag": "block",
+      "outboundTag": "blocked",
       "domain": [
         "geosite:category-ads-all",
         "geosite:malware",
@@ -15,7 +15,7 @@
     },
     {
       "type": "field",
-      "outboundTag": "block",
+      "outboundTag": "blocked",
       "ip": [
         "geoip:malware",
         "geoip:phishing",
@@ -25,7 +25,7 @@
     },
     {
       "type": "field",
-      "outboundTag": "warp",
+      "outboundTag": "socks5-warp",
       "domain": [
         "geosite:sanctioned",
         "geosite:social",
@@ -58,7 +58,7 @@
     },
     {
       "type": "field",
-      "outboundTag": "warp",
+      "outboundTag": "socks5-warp",
       "ip": [
         "geoip:openai",
         "geoip:telegram",
