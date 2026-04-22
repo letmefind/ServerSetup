@@ -106,13 +106,9 @@ write_xmplus_route_json() {
       "outboundTag": "socks5-warp",
       "ip": [
         "geoip:openai",
-        "geoip:telegram",
-        "geoip:twitter",
-        "geoip:facebook",
         "geoip:google",
         "geoip:netflix",
         "geoip:bing",
-        "geoip:github",
         "geoip:amazon",
         "geoip:microsoft",
         "geoip:oracle",
