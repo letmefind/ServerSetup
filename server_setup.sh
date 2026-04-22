@@ -71,6 +71,14 @@ write_xmplus_route_json() {
     },
     {
       "type": "field",
+      "outboundTag": "direct",
+      "ip": [
+        "8.8.8.8",
+        "1.1.1.1"
+      ]
+    },
+    {
+      "type": "field",
       "outboundTag": "socks5-warp",
       "domain": [
         "geosite:sanctioned",
@@ -679,6 +687,7 @@ EOF
   cat > /etc/XMPlus/outbound.json <<'EOF'
 [
   {
+    "tag": "direct",
     "protocol": "freedom",
     "settings": {}
   },
