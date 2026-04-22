@@ -53,8 +53,7 @@
         "domain:whatismyipaddress.com",
         "domain:ip-api.com",
         "domain:checkip.amazonaws.com"
-      ],
-      "type": "field"
+      ]
     },
     {
       "type": "field",

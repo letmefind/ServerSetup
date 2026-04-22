@@ -40,6 +40,120 @@ require_root() {
 
 cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# Write XMPlus route rules file.
+write_xmplus_route_json() {
+  local route_path="${1:-/etc/XMPlus/route.json}"
+  cat > "$route_path" <<'EOF'
+{
+  "domainStrategy": "IPIfNonMatch",
+  "rules": [
+    {
+      "type": "field",
+      "outboundTag": "block",
+      "domain": [
+        "geosite:category-ads-all",
+        "geosite:malware",
+        "geosite:phishing",
+        "geosite:cryptominers",
+        "geosite:ir",
+        "geosite:category-ir"
+      ]
+    },
+    {
+      "type": "field",
+      "outboundTag": "block",
+      "ip": [
+        "geoip:malware",
+        "geoip:phishing",
+        "geoip:ir",
+        "geoip:private"
+      ]
+    },
+    {
+      "type": "field",
+      "outboundTag": "warp",
+      "domain": [
+        "geosite:sanctioned",
+        "geosite:social",
+        "geosite:nsfw",
+        "geosite:openai",
+        "geosite:anthropic",
+        "domain:chatgpt.com",
+        "domain:openai.com",
+        "domain:claude.ai",
+        "domain:anthropic.com",
+        "domain:gemini.google.com",
+        "domain:makersuite.google.com",
+        "domain:poe.com",
+        "domain:perplexity.ai",
+        "domain:x.ai",
+        "domain:civitai.com",
+        "domain:midjourney.com",
+        "domain:huggingface.co",
+        "domain:ifconfig.me",
+        "domain:icanhazip.com",
+        "domain:ipinfo.io",
+        "domain:api.ipify.org",
+        "domain:ip.sb",
+        "domain:whatismyip.com",
+        "domain:whatismyipaddress.com",
+        "domain:ip-api.com",
+        "domain:checkip.amazonaws.com"
+      ]
+    },
+    {
+      "type": "field",
+      "outboundTag": "warp",
+      "ip": [
+        "geoip:openai",
+        "geoip:telegram",
+        "geoip:twitter",
+        "geoip:facebook",
+        "geoip:google",
+        "geoip:netflix",
+        "geoip:bing",
+        "geoip:github",
+        "geoip:amazon",
+        "geoip:microsoft",
+        "geoip:oracle",
+        "geoip:digitalocean",
+        "geoip:linode",
+        "geoip:cloudflare",
+        "geoip:cloudfront",
+        "geoip:fastly",
+        "geoip:gcore",
+        "geoip:tor"
+      ]
+    }
+  ]
+}
+EOF
+}
+
+# Download and place route-related .dat assets for XMPlus/Xray.
+install_route_assets() {
+  local asset_dir="/usr/local/share/xray"
+  local route_dir="/etc/XMPlus"
+  local base_url="https://cdn.jsdelivr.net/gh/chocolate4u/Iran-v2ray-rules@release"
+  local files=("geoip.dat" "geosite.dat" "geoip-lite.dat" "geosite-lite.dat" "security-ip.dat" "security.dat")
+  local file
+
+  mkdir -p "$asset_dir" "$route_dir"
+  echo ">>> Downloading latest routing rules from CDN..."
+
+  for file in "${files[@]}"; do
+    curl -fsSL "$base_url/$file" -o "$asset_dir/$file" || true
+    if [[ -s "$asset_dir/$file" ]]; then
+      echo "   ✅ Successfully downloaded $file"
+      cp -f "$asset_dir/$file" /usr/local/bin/ 2>/dev/null || true
+      cp -f "$asset_dir/$file" /usr/bin/ 2>/dev/null || true
+      cp -f "$asset_dir/$file" "$route_dir/" 2>/dev/null || true
+    else
+      echo "   ⚠️ Failed to download $file"
+    fi
+  done
+}
+
 # Helper function to write to terminal when piped
 # Ensures output is visible even when script is piped
 safe_echo() {
@@ -267,8 +381,12 @@ create_offline_package() {
   chmod +x "$OFFLINE_PACKAGE_DIR/install-scripts/server_setup.sh"
   
   # Save route rules
-  if [[ -f "$(dirname "$0")/route_rules.json" ]]; then
+  if [[ -f "$(dirname "$0")/route.json" ]]; then
+    cp "$(dirname "$0")/route.json" "$OFFLINE_PACKAGE_DIR/route/route.json"
+    cp "$(dirname "$0")/route.json" "$OFFLINE_PACKAGE_DIR/route/route_rules.json"
+  elif [[ -f "$(dirname "$0")/route_rules.json" ]]; then
     cp "$(dirname "$0")/route_rules.json" "$OFFLINE_PACKAGE_DIR/route/route_rules.json"
+    cp "$(dirname "$0")/route_rules.json" "$OFFLINE_PACKAGE_DIR/route/route.json"
   fi
   
   echo ">>> Downloading Docker installation script..."
@@ -277,13 +395,16 @@ create_offline_package() {
   echo ">>> Downloading XMPlus Docker ZIP..."
   wget --no-check-certificate -O "$OFFLINE_PACKAGE_DIR/xmplus/docker.zip" https://raw.githubusercontent.com/XMPlusDev/XMPlus/scripts/docker.zip || echo "⚠️ Failed to download XMPlus"
   
-  echo ">>> Downloading route.json..."
-  wget -O "$OFFLINE_PACKAGE_DIR/route/route.json" https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json || echo "⚠️ Failed to download route.json"
+  echo ">>> Creating route.json from embedded template..."
+  write_xmplus_route_json "$OFFLINE_PACKAGE_DIR/route/route.json"
   
-  echo ">>> Downloading Geo Data files..."
-  wget -O "$OFFLINE_PACKAGE_DIR/geo/geosite.dat" https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat || echo "⚠️ Failed to download geosite.dat"
-  wget -O "$OFFLINE_PACKAGE_DIR/geo/geoip.dat" https://github.com/v2fly/geoip/releases/latest/download/geoip.dat || echo "⚠️ Failed to download geoip.dat"
-  wget -O "$OFFLINE_PACKAGE_DIR/geo/iran.dat" https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat || echo "⚠️ Failed to download iran.dat"
+  echo ">>> Downloading route-related Geo Data files..."
+  local cdn_base="https://cdn.jsdelivr.net/gh/chocolate4u/Iran-v2ray-rules@release"
+  local route_files=("geoip.dat" "geosite.dat" "geoip-lite.dat" "geosite-lite.dat" "security-ip.dat" "security.dat")
+  local route_file
+  for route_file in "${route_files[@]}"; do
+    wget -O "$OFFLINE_PACKAGE_DIR/geo/$route_file" "$cdn_base/$route_file" || echo "⚠️ Failed to download $route_file"
+  done
   
   echo ">>> Downloading WARP script..."
   wget -N -O "$OFFLINE_PACKAGE_DIR/warp/menu.sh" https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh || echo "⚠️ Failed to download WARP script"
@@ -555,7 +676,7 @@ EOF
     echo "   Using offline route.json..."
     cp "$OFFLINE_INSTALL_DIR/route/route.json" /etc/XMPlus/route.json
   else
-  wget -O /etc/XMPlus/route.json https://raw.githubusercontent.com/letmefind/ServerSetup/main/route_rules.json
+    write_xmplus_route_json /etc/XMPlus/route.json
   fi
 
   # 4.3 outbound.json
@@ -568,10 +689,10 @@ EOF
   {
     "protocol": "blackhole",
     "settings": {},
-    "tag": "blocked"
+    "tag": "block"
   },
   {
-    "tag": "socks5-warp",
+    "tag": "warp",
     "protocol": "socks",
     "settings": {
       "servers": [
@@ -739,27 +860,25 @@ install_geo_data() {
   fi
   
   require_root
-  echo ">>> Downloading Geo Data files..."
+  echo ">>> Downloading route-related Geo Data files..."
   
   if use_offline; then
-    if [[ -f "$OFFLINE_INSTALL_DIR/geo/geosite.dat" ]]; then
-      cp "$OFFLINE_INSTALL_DIR/geo/geosite.dat" /etc/XMPlus/
-      echo "   ✅ Copied geosite.dat"
-    fi
-    if [[ -f "$OFFLINE_INSTALL_DIR/geo/geoip.dat" ]]; then
-      cp "$OFFLINE_INSTALL_DIR/geo/geoip.dat" /etc/XMPlus/
-      echo "   ✅ Copied geoip.dat"
-    fi
-    if [[ -f "$OFFLINE_INSTALL_DIR/geo/iran.dat" ]]; then
-      cp "$OFFLINE_INSTALL_DIR/geo/iran.dat" /etc/XMPlus/
-      echo "   ✅ Copied iran.dat"
-    fi
+    local offline_route_file
+    local offline_route_files=("geoip.dat" "geosite.dat" "geoip-lite.dat" "geosite-lite.dat" "security-ip.dat" "security.dat")
+    mkdir -p /usr/local/share/xray /etc/XMPlus
+    for offline_route_file in "${offline_route_files[@]}"; do
+      if [[ -f "$OFFLINE_INSTALL_DIR/geo/$offline_route_file" ]]; then
+        cp -f "$OFFLINE_INSTALL_DIR/geo/$offline_route_file" "/usr/local/share/xray/$offline_route_file"
+        cp -f "$OFFLINE_INSTALL_DIR/geo/$offline_route_file" "/etc/XMPlus/$offline_route_file"
+        cp -f "$OFFLINE_INSTALL_DIR/geo/$offline_route_file" /usr/local/bin/ 2>/dev/null || true
+        cp -f "$OFFLINE_INSTALL_DIR/geo/$offline_route_file" /usr/bin/ 2>/dev/null || true
+        echo "   ✅ Copied $offline_route_file"
+      fi
+    done
   else
-    wget -O /etc/XMPlus/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat || echo "⚠️ Failed to download geosite.dat"
-    wget -O /etc/XMPlus/geoip.dat   https://github.com/v2fly/geoip/releases/latest/download/geoip.dat || echo "⚠️ Failed to download geoip.dat"
-    wget -O /etc/XMPlus/iran.dat    https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat || echo "⚠️ Failed to download iran.dat"
+    install_route_assets
   fi
-  echo "✅ Geo Data files downloaded."
+  echo "✅ Route-related Geo Data files handled."
 }
 
 install_warp() {
