@@ -191,6 +191,16 @@ Applies system-level optimizations for better performance:
   - Auto-restart: always
 - Saves docker-compose.yml to `/etc/Docker/` and `/etc/XMPlus/`
 
+### Route rules (`route.json`)
+
+Rules are evaluated top to bottom. DNS traffic is routed **direct** (not through WARP):
+
+- Ports `53`, `853`, `8853` (UDP/TCP DNS, DoT, DoQ)
+- Public resolver IPs (Google, Cloudflare, Quad9, OpenDNS, AdGuard, IPv6 equivalents)
+- DoH hostnames (`dns.google`, `cloudflare-dns.com`, `one.one.one.one`, etc.)
+
+`geoip:cloudflare` was removed from the WARP IP list so Cloudflare DNS is not forced through the proxy. Other WARP targets (sanctioned sites, `geoip:google`, etc.) are unchanged.
+
 ### 6. Geo Data Files
 Downloads geo data files:
 - `geosite.dat` - Domain list
